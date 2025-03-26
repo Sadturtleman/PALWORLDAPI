@@ -48,11 +48,19 @@ pipeline {
                     '''
 
                     // 점수 파싱
-                    def scoreText = readFile('pylint_score.txt')
-                    def pylintScore = "10.0" // 기본값
-                    if ((scoreText =~ /rated at ([\d\.]+)/).find()) {
-                        pylintScore = (scoreText =~ /rated at ([\d\.]+)/).group(1)
-                    } 
+                    try {
+                        def scoreText = readFile('pylint_score.txt')
+                        def matcher = (scoreText =~ /rated at ([\d\.]+)/)
+                        if (matcher.find()) {
+                            pylintScore = matcher.group(1)
+                        } else {
+                            echo "⚠️ 점수 매칭 실패. 기본값 유지."
+                        }
+                    } catch (e) {
+                        echo "❌ 점수 파일 읽기 실패: ${e.message}"
+                        pylintScore = "0.0"
+                    }
+
                     echo "🚀 Pylint Score: ${pylintScore}"
 
 
