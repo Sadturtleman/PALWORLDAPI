@@ -22,10 +22,8 @@ pipeline {
                 bat '''
                     @echo off
                     call .\\venv\\Scripts\\activate
-                    call pylint PALWORLDAPI\\src > pylint_report.txt 2>&1
-                    echo ==== Pylint Report Begin ====
-                    more pylint_report.txt
-                    echo ==== Pylint Report End ====
+                    call pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
+                    call pylint-json2html -f json -o pylint_report.html pylint.json
                 '''
             }
         }
@@ -33,29 +31,33 @@ pipeline {
         stage('test') {
             steps {
                 echo 'test stage'
-                // 필요 시 여기에 테스트 명령 추가
-                // 예: bat 'call .\\venv\\Scripts\\activate && python -m unittest discover tests'
             }
         }
 
         stage('build') {
             steps {
                 echo 'build stage'
-                // 예: bat 'call .\\venv\\Scripts\\activate && python setup.py sdist bdist_wheel'
             }
         }
 
         stage('docker build') {
             steps {
                 echo 'docker build stage'
-                // 예: bat 'docker build -t palworld-api .'
             }
         }
     }
 
     post {
         always {
-            archiveArtifacts artifacts: 'pylint_report.txt', onlyIfSuccessful: true
+            archiveArtifacts artifacts: 'pylint_report.html', onlyIfSuccessful: true
+            publishHTML(target: [
+                allowMissing: false,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: '.',
+                reportFiles: 'pylint_report.html',
+                reportName: 'Pylint HTML Report'
+            ])
         }
     }
 }
