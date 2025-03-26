@@ -30,25 +30,27 @@ pipeline {
                         call %VENV_DIR%\\Scripts\\activate
 
                         echo === Running pylint and generating HTML report ===
-                        pylint PALWORLDAPI\\src --output-format=json > pylint.json
+                        pylint PALWORLDAPI\\src --output-format=json > pylint_full.json
+                        
+                        REM 메시지만 추출하여 pylint.json 생성
+                        python -c "import json; data=json.load(open('pylint_full.json')); json.dump([item for item in data if item['type'] != 'report'], open('pylint.json', 'w'))"
+                        
                         pylint-json2html -f json -o pylint_report.html pylint.json
 
                         if exist pylint_html rmdir /S /Q pylint_html
                         mkdir pylint_html
-
-                        rem HTML 보고서에 점수 추가
-                        echo ^<h2 style="padding:10px; background:#f2f2f2;"^>Pylint Score: >> pylint_html\\index.html
+                        move pylint_report.html pylint_html\\report.html
                     '''
 
-                    def pylintJson = readJSON(file: 'pylint.json')
+                    def pylintJson = readJSON(file: 'pylint_full.json')
                     def pylintScore = pylintJson.find { it.type == 'report' }?.score ?: "0"
 
-                    // 점수를 HTML에 직접 추가하는 방식
+                    // 점수를 포함한 HTML 생성
                     writeFile file: 'pylint_html/index.html', text: """
                     <html>
                         <body>
                             <h2 style="padding:10px; background:#f2f2f2;">🚀 Pylint Score: ${pylintScore}</h2>
-                            ${readFile('pylint_report.html')}
+                            ${readFile('pylint_html/report.html')}
                         </body>
                     </html>
                     """
