@@ -40,15 +40,14 @@ pipeline {
 
                     def pylintJson = readJSON(file: 'pylint.json')
 
-                    // pylint JSON에서 점수 추출
-                    def pylintScore = pylintJson.find { it.type == 'report' }?.score ?: 0
+                    def pylintScore = pylintJson.find { it.type == 'report' }?.score ?: "0"
                     echo "Pylint Score: ${pylintScore}"
 
                     if (env.CHANGE_ID) {
                         echo "Detected PR #${env.CHANGE_ID}, Checking pylint score"
-                        
-                        if (Double.valueOf(pylintScore) < Double.valueOf(MIN_SCORE)) {
-                            error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
+
+                        if (pylintScore.toString().toDouble() < MIN_SCORE.toString().toDouble()) {
+                            error("PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
                         }
                     } else {
                         echo "일반 push 빌드이므로 pylint 점수 체크를 건너뜁니다."
