@@ -1,11 +1,13 @@
 pipeline {
     agent any
+    triggers{
+        githubPush()
+    }
     stages {
         stage('Prepare'){
             steps {
-                git credentialsId : 'github',
-                    branch : 'main',
-                    url : 'https://github.com/Sadturtleman/PALWORLDAPI.git'
+                echo 'Prepare stage'
+                checkout scm
             }
         }
         stage('test') {
