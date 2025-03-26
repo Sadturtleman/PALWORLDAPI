@@ -1,8 +1,11 @@
 pipeline {
+
     agent any
+
     triggers{
         githubPush()
     }
+
     stages {
         stage('Prepare'){
             steps {
@@ -12,6 +15,7 @@ pipeline {
                 bat '.\\venv\\Scripts\\activate && pip install -r requirements.txt'
             }
         }
+
         stage('Static Code Analysis') {
             steps {
                 echo 'Static Code Analysis stage'
@@ -23,16 +27,19 @@ pipeline {
                 '''
             }
         }
+
         stage('test') {
             steps {
                 echo 'test stage'
             }
         }
+
         stage('build') {
             steps {
                 echo 'build stage'
             }
         }
+        
         stage('docker build') {
             steps {
                 echo 'docker build stage'
