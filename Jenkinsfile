@@ -22,9 +22,9 @@ pipeline {
                 bat '''
                     @echo off
                     call .\\venv\\Scripts\\activate
-                    call pylint PALWORLDAPI\\src > pylint_report.txt 2>&1 || exit /b 0
+                    call pylint PALWORLDAPI\\src > pylint_report.txt 2>&1
                     echo ==== Pylint Report Begin ====
-                    type pylint_report.txt
+                    more pylint_report.txt
                     echo ==== Pylint Report End ====
                 '''
             }
