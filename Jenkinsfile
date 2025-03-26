@@ -49,10 +49,13 @@ pipeline {
 
                     // 점수 파싱
                     def scoreText = readFile('pylint_score.txt')
-                    def scoreMatch = scoreText =~ /rated at ([\\d\\.]+)\\/10/
-                    def pylintScore = scoreMatch ? scoreMatch[0][1] : "10.0"
-
+                    def pylintScore = "10.0" // 기본값
+                    def matcher = (scoreText =~ /rated at ([\d\.]+)/)
+                    if (matcher.find()) {
+                        pylintScore = matcher.group(1)
+                    }
                     echo "🚀 Pylint Score: ${pylintScore}"
+
 
                     // PR이면 점수 기준 통과 확인
                     if (env.CHANGE_ID) {
