@@ -18,20 +18,29 @@ pipeline {
         stage('Static Code Analysis') {
             steps {
                 echo 'Static Code Analysis stage'
+                
                 bat '''
                     @echo off
                     call .\\venv\\Scripts\\activate
-
-                    echo Running pylint and generating JSON...
+                    echo === Running pylint and generating JSON ===
                     pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
-
-                    echo Contents of pylint.json:
+                '''
+                
+                bat '''
+                    @echo off
+                    echo === Showing JSON contents ===
                     type pylint.json
-
-                    echo Converting JSON to HTML...
+                '''
+                
+                bat '''
+                    @echo off
+                    echo === Converting JSON to HTML ===
                     python -m pylint_json2html -f json -o pylint_report.html pylint.json
+                '''
 
-                    echo Directory contents after conversion:
+                bat '''
+                    @echo off
+                    echo === Final directory contents ===
                     dir
                 '''
             }
