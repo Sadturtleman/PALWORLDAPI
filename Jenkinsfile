@@ -8,6 +8,7 @@ pipeline {
     environment {
         VENV_DIR = 'venv'
         MIN_SCORE = 8.0
+        PYTHONUTP8 = '1'
     }
 
     stages {
