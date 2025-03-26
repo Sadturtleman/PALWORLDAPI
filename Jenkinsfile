@@ -1,60 +1,68 @@
 pipeline {
-
     agent any
 
     triggers {
         githubPush()
     }
 
+    environment {
+        VENV_DIR = 'venv'
+        MIN_SCORE = 8.0
+    }
+
     stages {
         stage('Prepare') {
             steps {
-                echo 'Prepare stage'
                 checkout scm
-                bat 'python -m venv venv'
-                bat '.\\venv\\Scripts\\activate && pip install -r requirements.txt'
+                bat '''
+                    @echo off
+                    python -m venv %VENV_DIR%
+                    call %VENV_DIR%\\Scripts\\activate && pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Static Code Analysis') {
             steps {
-                echo 'Static Code Analysis stage'
+                script {
+                    bat '''
+                        @echo off
+                        call %VENV_DIR%\\Scripts\\activate
+                        
+                        echo === Running pylint and generating HTML report ===
+                        pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
+                        pylint-json2html -f json -o pylint_report.html pylint.json
 
-                // pylint JSON 리포트 생성
-                bat '''
-                    @echo off
-                    call .\\venv\\Scripts\\activate
-                    echo === Running pylint and generating JSON ===
-                    pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
-                '''
+                        if exist pylint_html rmdir /S /Q pylint_html
+                        mkdir pylint_html
+                        move pylint_report.html pylint_html\\index.html
+                    '''
 
-                // JSON 확인
-                bat '''
-                    @echo off
-                    echo === Showing JSON contents ===
-                    type pylint.json
-                '''
+                    if (env.CHANGE_ID) { // PR일 때만 점수 체크
+                        echo "Detected Pull Request: #${env.CHANGE_ID}, Checking pylint score"
 
-                // HTML 생성
-                bat '''
-                    @echo off
-                    echo === Converting JSON to HTML ===
-                    .\\venv\\Scripts\\pylint-json2html -f json -o pylint_report.html pylint.json
-                '''
+                        bat '''
+                            @echo off
+                            call %VENV_DIR%\\Scripts\\activate
+                            pylint PALWORLDAPI\\src > pylint_score.txt || exit /b 0
+                        '''
 
-                // 리포트용 디렉토리 생성 + 이름 변경
-                bat '''
-                    @echo off
-                    mkdir pylint_html
-                    move pylint_report.html pylint_html\\index.html
-                '''
+                        def pylintScoreText = readFile('pylint_score.txt')
+                        def matcher = (pylintScoreText =~ /Your code has been rated at ([0-9\\.]+)/)
+                        if (matcher) {
+                            def pylintScore = matcher[0][1].toFloat()
+                            echo "Pylint Score: ${pylintScore}"
 
-                // 확인용 출력
-                bat '''
-                    @echo off
-                    echo === Final directory contents ===
-                    dir pylint_html
-                '''
+                            if (pylintScore < MIN_SCORE.toFloat()) {
+                                error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
+                            }
+                        } else {
+                            error("Pylint 점수를 읽을 수 없습니다.")
+                        }
+                    } else {
+                        echo "일반 push 빌드이므로 pylint 점수 체크를 건너뜁니다."
+                    }
+                }
             }
         }
 
@@ -79,7 +87,7 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'pylint_html/index.html', onlyIfSuccessful: true
+            archiveArtifacts artifacts: 'pylint_html/index.html', onlyIfSuccessful: false
             publishHTML(target: [
                 allowMissing: false,
                 alwaysLinkToLastBuild: true,
