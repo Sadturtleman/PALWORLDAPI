@@ -15,7 +15,6 @@ pipeline {
                 bat '.\\venv\\Scripts\\activate && pip install -r requirements.txt'
             }
         }
-
         stage('Static Code Analysis') {
             steps {
                 echo 'Static Code Analysis stage'
@@ -26,14 +25,18 @@ pipeline {
                     echo Running pylint and generating JSON...
                     pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
 
+                    echo Contents of pylint.json:
+                    type pylint.json
+
                     echo Converting JSON to HTML...
                     python -m pylint_json2html -f json -o pylint_report.html pylint.json
 
-                    echo File list in current dir:
+                    echo Directory contents after conversion:
                     dir
                 '''
             }
         }
+
 
         stage('test') {
             steps {
