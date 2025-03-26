@@ -11,5 +11,3 @@ def divide(x, y):
         return x / y
 
 unused_variable = 42  # 사용되지 않음 (pylint 경고)
-
-divide(10, 0)
