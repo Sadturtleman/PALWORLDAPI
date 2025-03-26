@@ -50,10 +50,9 @@ pipeline {
                     // 점수 파싱
                     def scoreText = readFile('pylint_score.txt')
                     def pylintScore = "10.0" // 기본값
-                    def matcher = (scoreText =~ /rated at ([\d\.]+)/)
-                    if (matcher.find()) {
-                        pylintScore = matcher.group(1)
-                    }
+                    if ((scoreText =~ /rated at ([\d\.]+)/).find()) {
+                        pylintScore = (scoreText =~ /rated at ([\d\.]+)/).group(1)
+                    } 
                     echo "🚀 Pylint Score: ${pylintScore}"
 
 
