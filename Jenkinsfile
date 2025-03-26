@@ -2,12 +2,12 @@ pipeline {
 
     agent any
 
-    triggers{
+    triggers {
         githubPush()
     }
 
     stages {
-        stage('Prepare'){
+        stage('Prepare') {
             steps {
                 echo 'Prepare stage'
                 checkout scm
@@ -15,10 +15,12 @@ pipeline {
                 bat '.\\venv\\Scripts\\activate && pip install -r requirements.txt'
             }
         }
+
         stage('Static Code Analysis') {
             steps {
                 echo 'Static Code Analysis stage'
                 bat '''
+                    @echo off
                     call .\\venv\\Scripts\\activate
                     call pylint PALWORLDAPI\\src > pylint_report.txt 2>&1 || exit /b 0
                     echo ==== Pylint Report Begin ====
@@ -28,23 +30,32 @@ pipeline {
             }
         }
 
-
         stage('test') {
             steps {
                 echo 'test stage'
+                // 필요 시 여기에 테스트 명령 추가
+                // 예: bat 'call .\\venv\\Scripts\\activate && python -m unittest discover tests'
             }
         }
 
         stage('build') {
             steps {
                 echo 'build stage'
+                // 예: bat 'call .\\venv\\Scripts\\activate && python setup.py sdist bdist_wheel'
             }
         }
 
         stage('docker build') {
             steps {
                 echo 'docker build stage'
+                // 예: bat 'docker build -t palworld-api .'
             }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'pylint_report.txt', onlyIfSuccessful: true
         }
     }
 }
