@@ -15,7 +15,7 @@ pipeline {
         stage('Static Code Analysis') {
             steps {
                 echo 'Static Code Analysis stage'
-                bat '.\\venv\\Scripts\\activate && pylint PALWORLDAPI\\src > pylint_report.txt || exit /b 0 && type pylint_report.txt'
+                bat '.\\venv\\Scripts\\activate && pylint PALWORLDAPI\\src > pylint_report.txt 2>&1 || exit /b 0 && type pylint_report.txt'
             }
         }
         stage('test') {
