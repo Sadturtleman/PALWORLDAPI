@@ -47,7 +47,7 @@ pipeline {
                     if (env.CHANGE_ID) {
                         echo "Detected PR #${env.CHANGE_ID}, Checking pylint score"
                         
-                        if (Float.parseFloat(pylintScore.toString()) < Float.parseFloat(MIN_SCORE.toString())) {
+                        if (Double.valueOf(pylintScore) < Double.valueOf(MIN_SCORE)) {
                             error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
                         }
                     } else {
