@@ -39,6 +39,10 @@ pipeline {
                     '''
 
                     def pylintJson = readJSON(file: 'pylint.json')
+                    echo "=== Pylint JSON 출력 (디버깅) ==="
+                    for (item in pylintJson) {
+                        echo "Item: ${item}"
+                    }
 
                     def pylintScore = "0"
                     for (item in pylintJson) {
@@ -47,7 +51,7 @@ pipeline {
                             break
                         }
                     }
-
+                    echo "최종 추출한 Pylint Score: ${pylintScore}"
                     writeFile file: 'pylint_html/index.html', text: """
                     <html>
                         <body>
