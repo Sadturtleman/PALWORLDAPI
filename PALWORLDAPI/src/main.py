@@ -10,8 +10,8 @@ def add_numbers(a,b):
     return result
 
 def divide(x, y):
-    # This function divides two numbers
+    """This function divides two numbers
+    """
     if y == 0:
         return 0
-    else:
-        return x / y
+    return x / y
