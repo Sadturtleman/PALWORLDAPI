@@ -22,8 +22,15 @@ pipeline {
                 bat '''
                     @echo off
                     call .\\venv\\Scripts\\activate
-                    call pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
-                    call pylint-json2html -f json -o pylint_report.html pylint.json
+
+                    echo Running pylint and generating JSON...
+                    pylint PALWORLDAPI\\src --output-format=json > pylint.json || exit /b 0
+
+                    echo Converting JSON to HTML...
+                    python -m pylint_json2html -f json -o pylint_report.html pylint.json
+
+                    echo File list in current dir:
+                    dir
                 '''
             }
         }
