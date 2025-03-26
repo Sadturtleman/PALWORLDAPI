@@ -31,7 +31,7 @@ pipeline {
                         call %VENV_DIR%\\Scripts\\activate.bat
 
                         echo === Running pylint and generating JSON report ===
-                        pylint calculator.py --output-format=json > pylint.json
+                        pylint PALWORLDAPI\\src --output-format=json > pylint.json
                         pylint-json2html -f json -o pylint_report.html pylint.json
 
                         if exist pylint_html rmdir /S /Q pylint_html
