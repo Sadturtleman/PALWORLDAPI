@@ -38,26 +38,17 @@ pipeline {
                         move pylint_report.html pylint_html\\index.html
                     '''
 
-                    if (env.CHANGE_ID) { // PR일 때만 점수 체크
-                        echo "Detected Pull Request: #${env.CHANGE_ID}, Checking pylint score"
+                    def pylintJson = readJSON(file: 'pylint.json')
 
-                        bat '''
-                            @echo off
-                            call %VENV_DIR%\\Scripts\\activate
-                            pylint PALWORLDAPI\\src > pylint_score.txt || exit /b 0
-                        '''
+                    // pylint JSON에서 점수 추출
+                    def pylintScore = pylintJson.find { it.type == 'report' }?.score ?: 0
+                    echo "Pylint Score: ${pylintScore}"
 
-                        def pylintScoreText = readFile('pylint_score.txt')
-                        def matcher = (pylintScoreText =~ /Your code has been rated at ([0-9\\.]+)/)
-                        if (matcher) {
-                            def pylintScore = matcher[0][1].toFloat()
-                            echo "Pylint Score: ${pylintScore}"
-
-                            if (pylintScore < MIN_SCORE.toFloat()) {
-                                error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
-                            }
-                        } else {
-                            error("Pylint 점수를 읽을 수 없습니다.")
+                    if (env.CHANGE_ID) {
+                        echo "Detected PR #${env.CHANGE_ID}, Checking pylint score"
+                        
+                        if (pylintScore.toFloat() < MIN_SCORE.toFloat()) {
+                            error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
                         }
                     } else {
                         echo "일반 push 빌드이므로 pylint 점수 체크를 건너뜁니다."
@@ -67,21 +58,15 @@ pipeline {
         }
 
         stage('test') {
-            steps {
-                echo 'test stage'
-            }
+            steps { echo 'test stage' }
         }
 
         stage('build') {
-            steps {
-                echo 'build stage'
-            }
+            steps { echo 'build stage' }
         }
 
         stage('docker build') {
-            steps {
-                echo 'docker build stage'
-            }
+            steps { echo 'docker build stage' }
         }
     }
 
