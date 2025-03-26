@@ -30,15 +30,17 @@ pipeline {
                         @echo off
                         call %VENV_DIR%\\Scripts\\activate.bat
 
-                        pylint PALWORLDAPI\\src --output-format=json > pylint.json
+                        echo === Running pylint and generating JSON report ===
+                        pylint calculator.py --output-format=json > pylint.json
                         pylint-json2html -f json -o pylint_report.html pylint.json
-                        
+
                         if exist pylint_html rmdir /S /Q pylint_html
                         mkdir pylint_html
                         move pylint_report.html pylint_html\\report.html
                     '''
 
                     def pylintJson = readJSON(file: 'pylint.json')
+
                     echo "=== Pylint JSON 출력 (디버깅) ==="
                     for (item in pylintJson) {
                         echo "Item: ${item}"
@@ -51,7 +53,9 @@ pipeline {
                             break
                         }
                     }
+
                     echo "최종 추출한 Pylint Score: ${pylintScore}"
+
                     writeFile file: 'pylint_html/index.html', text: """
                     <html>
                         <body>
@@ -61,8 +65,6 @@ pipeline {
                     </html>
                     """
 
-                    echo "Pylint Score: ${pylintScore}"
-
                     if (env.CHANGE_ID) {
                         if (pylintScore.toDouble() < MIN_SCORE.toDouble()) {
                             error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
@@ -71,7 +73,6 @@ pipeline {
                 }
             }
         }
-
         stage('test') {
             steps { echo 'test stage' }
         }
