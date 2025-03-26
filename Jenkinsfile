@@ -30,7 +30,7 @@ pipeline {
                         call %VENV_DIR%\\Scripts\\activate
                         
                         echo === Running pylint and generating HTML report ===
-                        pylint src --output-format=json > pylint.json || exit /b 0
+                        pylint PALWORLD\\src --output-format=json > pylint.json
                         pylint-json2html -f json -o pylint_report.html pylint.json
 
                         if exist pylint_html rmdir /S /Q pylint_html
