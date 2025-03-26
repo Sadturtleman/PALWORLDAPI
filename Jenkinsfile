@@ -20,7 +20,8 @@ pipeline {
             steps {
                 echo 'Static Code Analysis stage'
                 bat '''
-                    .\\venv\\Scripts\\activate && pylint PALWORLDAPI\\src > pylint_report.txt 2>&1 || exit /b 0
+                    call .\\venv\\Scripts\\activate
+                    pylint PALWORLDAPI\\src > pylint_report.txt 2>&1 || exit /b 0
                     echo ==== Pylint Report Begin ====
                     type pylint_report.txt
                     echo ==== Pylint Report End ====
@@ -39,7 +40,7 @@ pipeline {
                 echo 'build stage'
             }
         }
-        
+
         stage('docker build') {
             steps {
                 echo 'docker build stage'
