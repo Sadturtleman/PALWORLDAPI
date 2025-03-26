@@ -27,29 +27,30 @@ pipeline {
                 script {
                     bat '''
                         @echo off
-                        call %VENV_DIR%\\Scripts\\activate
+                        call %VENV_DIR%\\Scripts\\activate.bat
 
-                        echo === Running pylint and generating HTML report ===
-                        pylint PALWORLDAPI\\src --output-format=json > pylint_full.json
-                        
-                        REM 메시지만 추출하여 pylint.json 생성
-                        python -c "import json; data=json.load(open('pylint_full.json')); json.dump([item for item in data if item['type'] != 'report'], open('pylint.json', 'w'))"
-                        
+                        pylint ./src --output-format=json > pylint.json
                         pylint-json2html -f json -o pylint_report.html pylint.json
-
+                        
                         if exist pylint_html rmdir /S /Q pylint_html
                         mkdir pylint_html
                         move pylint_report.html pylint_html\\report.html
                     '''
 
-                    def pylintJson = readJSON(file: 'pylint_full.json')
-                    def pylintScore = pylintJson.find { it.type == 'report' }?.score ?: "0"
+                    def pylintJson = readJSON(file: 'pylint.json')
 
-                    // 점수를 포함한 HTML 생성
+                    def pylintScore = "0"
+                    for (item in pylintJson) {
+                        if (item.type == 'report' && item.score != null) {
+                            pylintScore = item.score.toString()
+                            break
+                        }
+                    }
+
                     writeFile file: 'pylint_html/index.html', text: """
                     <html>
                         <body>
-                            <h2 style="padding:10px; background:#f2f2f2;">🚀 Pylint Score: ${pylintScore}</h2>
+                            <h2>Pylint Score: ${pylintScore}</h2>
                             ${readFile('pylint_html/report.html')}
                         </body>
                     </html>
@@ -58,12 +59,9 @@ pipeline {
                     echo "Pylint Score: ${pylintScore}"
 
                     if (env.CHANGE_ID) {
-                        echo "Detected PR #${env.CHANGE_ID}, Checking pylint score"
-                        if (pylintScore.toString().toDouble() < MIN_SCORE.toString().toDouble()) {
+                        if (pylintScore.toDouble() < MIN_SCORE.toDouble()) {
                             error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
                         }
-                    } else {
-                        echo "일반 push 빌드이므로 pylint 점수 체크를 건너뜁니다."
                     }
                 }
             }
