@@ -39,7 +39,7 @@ pipeline {
                 bat '''
                     @echo off
                     echo === Converting JSON to HTML ===
-                    .\\venv\\Scripts\\python -m pylint_json2html -f json -o pylint_report.html pylint.json
+                    .\\venv\\Scripts\\pylint-json2html -f json -o pylint_report.html pylint.json
                 '''
 
                 // 리포트용 디렉토리 생성 + 이름 변경
