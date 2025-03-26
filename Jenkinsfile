@@ -29,7 +29,7 @@ pipeline {
                         @echo off
                         call %VENV_DIR%\\Scripts\\activate.bat
 
-                        pylint ./src --output-format=json > pylint.json
+                        pylint PALWORLDAPI\\src --output-format=json > pylint.json
                         pylint-json2html -f json -o pylint_report.html pylint.json
                         
                         if exist pylint_html rmdir /S /Q pylint_html
