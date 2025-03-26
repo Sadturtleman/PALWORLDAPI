@@ -1,13 +1,17 @@
-# Description: This file contains the example functions that will be used in the API
+"""
+This is the main module of the PALWORLD API
+"""
 
-def add_numbers(a,b) : 
-    # This function adds two numbers
+def add_numbers(a,b):
+    """
+    This function adds two numbers
+    """
     result = a + b
     return result
 
-def divide(x, y) :
+def divide(x, y):
     # This function divides two numbers
     if y == 0:
-        print("Cannot divide by zero")
+        return 0
     else:
         return x / y
