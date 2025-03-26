@@ -41,6 +41,8 @@ def main():
     print("곱하기:", multiply_numbers(2, 4))
     print("나누기:", divide_numbers(10, 2))
 
+def badFunction( ):
+  return  1
 
 if __name__ == "__main__":
     main()

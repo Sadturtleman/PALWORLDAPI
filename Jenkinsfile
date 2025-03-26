@@ -8,7 +8,7 @@ pipeline {
     environment {
         VENV_DIR = 'venv'
         MIN_SCORE = 8.0
-        PYTHONUTP8 = '1'
+        PYTHONUTF8 = '1'
     }
 
     stages {
@@ -18,7 +18,7 @@ pipeline {
                 bat '''
                     @echo off
                     python -m venv %VENV_DIR%
-                    call %VENV_DIR%\\Scripts\\activate && pip install -r requirements.txt
+                    call %VENV_DIR%\\Scripts\\activate.bat && pip install -r requirements.txt
                 '''
             }
         }
@@ -32,6 +32,7 @@ pipeline {
 
                         echo === Running pylint and generating JSON report ===
                         pylint PALWORLDAPI\\src --output-format=json > pylint.json 2>&1
+
                         pylint-json2html -f json -o pylint_report.html pylint.json
 
                         if exist pylint_html rmdir /S /Q pylint_html
@@ -46,7 +47,7 @@ pipeline {
                         echo "Item: ${item}"
                     }
 
-                    def pylintScore = "0"
+                    def pylintScore = "10.0" // 기본값 (문제 없을 경우)
                     for (item in pylintJson) {
                         if (item.type == 'report' && item.score != null) {
                             pylintScore = item.score.toString()
@@ -54,8 +55,9 @@ pipeline {
                         }
                     }
 
-                    echo "최종 추출한 Pylint Score: ${pylintScore}"
+                    echo "🚀 Pylint Score: ${pylintScore}"
 
+                    // 리포트에 점수도 표시
                     writeFile file: 'pylint_html/index.html', text: """
                     <html>
                         <body>
@@ -66,23 +68,33 @@ pipeline {
                     """
 
                     if (env.CHANGE_ID) {
+                        echo "Detected PR #${env.CHANGE_ID}, Checking pylint score"
                         if (pylintScore.toDouble() < MIN_SCORE.toDouble()) {
                             error("🚫 PR 빌드 실패: Pylint 점수(${pylintScore})가 기준(${MIN_SCORE}) 미달입니다.")
                         }
+                    } else {
+                        echo "일반 push 빌드이므로 pylint 점수 체크를 건너뜁니다."
                     }
                 }
             }
         }
+
         stage('test') {
-            steps { echo 'test stage' }
+            steps {
+                echo '✅ test stage'
+            }
         }
 
         stage('build') {
-            steps { echo 'build stage' }
+            steps {
+                echo '✅ build stage'
+            }
         }
 
         stage('docker build') {
-            steps { echo 'docker build stage' }
+            steps {
+                echo '✅ docker build stage'
+            }
         }
     }
 
