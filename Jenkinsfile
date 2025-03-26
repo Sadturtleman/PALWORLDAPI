@@ -3,8 +3,8 @@ pipeline {
     stages {
         stage('Prepare'){
             steps {
-                git credentialsId : '{github}',
-                    branch : '{main}',
+                git credentialsId : 'github',
+                    branch : 'main',
                     url : 'https://github.com/Sadturtleman/PALWORLDAPI.git'
             }
         }
