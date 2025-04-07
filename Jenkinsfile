@@ -120,7 +120,7 @@ pipeline {
         success {
             script {
                 def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "✅ 빌드 성공!"
-                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK')]) {
+                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
                     bat """
                         powershell -Command ^
                         Invoke-RestMethod -Uri "\${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
