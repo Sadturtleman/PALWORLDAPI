@@ -1,3 +1,4 @@
+def pylintScore = "N/A"
 pipeline {
     agent any
 
@@ -10,7 +11,7 @@ pipeline {
         MIN_SCORE = 8.0
         PYTHONUTF8 = '1'
     }
-
+    
     stages {
         stage('Prepare') {
             steps {
