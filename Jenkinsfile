@@ -110,15 +110,15 @@ pipeline {
 
         success {
             script {
-                def scoreMsg = (pylintScore) ? "**💯 Pylint Score:** `${pylintScore}`\n✅ Build passed!" : "✅ 빌드 성공!"
-                sendDiscordMessage("✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}", scoreMsg, 65280)
+                def desc = "**💯 Pylint Score:** `${pylintScore}`\n✅ Build passed!"
+                sendDiscordMessage("✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}", desc, 65280)
             }
         }
 
         failure {
             script {
-                def scoreMsg = (pylintScore) ? "**💯 Pylint Score:** `${pylintScore}`\n❌ Build failed!" : "❌ 빌드 실패"
-                sendDiscordMessage("❌ Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", scoreMsg, 16711680)
+                def desc = "**💯 Pylint Score:** `${pylintScore}`\n❌ Build failed!"
+                sendDiscordMessage("❌ Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", desc, 16711680)
             }
         }
     }
@@ -128,13 +128,11 @@ def sendDiscordMessage(title, description, color) {
     withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
         writeFile file: 'send-discord.ps1', text: '''[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-param(
-    [string] $WebhookUrl,
-    [string] $Title,
-    [string] $Description,
-    [int] $Color,
-    [string] $BuildUrl
-)
+$WebhookUrl = $env:DISCORD_WEBHOOK
+$Title = $env:DISCORD_TITLE
+$Description = $env:DISCORD_DESCRIPTION
+$Color = [int]$env:DISCORD_COLOR
+$BuildUrl = $env:DISCORD_URL
 
 $payload = @{
     username = "JenkinsBot"
@@ -144,9 +142,7 @@ $payload = @{
             description = $Description
             color = $Color
             url = $BuildUrl
-            footer = @{
-                text = "Jenkins CI/CD"
-            }
+            footer = @{ text = "Jenkins CI/CD" }
             timestamp = (Get-Date).ToString("o")
         }
     )
@@ -161,12 +157,14 @@ try {
 }
 ''', encoding: 'UTF-8'
 
-        bat '''powershell -ExecutionPolicy Bypass -File send-discord.ps1 ^
-            -WebhookUrl "%DISCORD_WEBHOOK%" ^
-            -Title "''' + title + '''" ^
-            -Description "''' + description + '''" ^
-            -Color ''' + color + ''' ^
-            -BuildUrl "''' + env.BUILD_URL + '''"
-        '''
+        withEnv([
+            "DISCORD_WEBHOOK=${DISCORD_WEBHOOK}",
+            "DISCORD_TITLE=${title}",
+            "DISCORD_DESCRIPTION=${description}",
+            "DISCORD_COLOR=${color}",
+            "DISCORD_URL=${env.BUILD_URL}"
+        ]) {
+            bat '''powershell -ExecutionPolicy Bypass -Command "& { .\\send-discord.ps1 }"'''
+        }
     }
 }
