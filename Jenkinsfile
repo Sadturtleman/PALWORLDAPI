@@ -123,16 +123,16 @@ pipeline {
                 withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK')]) {
                     bat """
                         powershell -Command ^
-                        Invoke-RestMethod -Uri "${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
+                        Invoke-RestMethod -Uri "\${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
                             username = "JenkinsBot";
                             embeds = @(
                                 @{
-                                    title = "✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}";
+                                    title = "✅ Build Success: \${env.JOB_NAME} #\${env.BUILD_NUMBER}";
                                     description = "${scoreMsg}";
                                     color = 65280;
-                                    url = "${env.BUILD_URL}";
+                                    url = "\${env.BUILD_URL}";
                                     footer = @{ text = "Jenkins CI/CD" };
-                                    timestamp = "$(Get-Date -Format o)"
+                                    timestamp = "\$(Get-Date -Format o)"
                                 }
                             )
                         } | ConvertTo-Json -Depth 10)
@@ -144,19 +144,19 @@ pipeline {
         failure {
             script {
                 def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "❌ 빌드 실패"
-                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK')]) {
+                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
                     bat """
                         powershell -Command ^
-                        Invoke-RestMethod -Uri "${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
+                        Invoke-RestMethod -Uri "\${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
                             username = "JenkinsBot";
                             embeds = @(
                                 @{
-                                    title = "❌ Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}";
+                                    title = "❌ Build Failed: \${env.JOB_NAME} #\${env.BUILD_NUMBER}";
                                     description = "${scoreMsg}";
                                     color = 16711680;
-                                    url = "${env.BUILD_URL}";
+                                    url = "\${env.BUILD_URL}";
                                     footer = @{ text = "Jenkins CI/CD" };
-                                    timestamp = "$(Get-Date -Format o)"
+                                    timestamp = "\$(Get-Date -Format o)"
                                 }
                             )
                         } | ConvertTo-Json -Depth 10)
