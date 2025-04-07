@@ -110,43 +110,40 @@ pipeline {
 
         success {
             script {
-                def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "✅ 빌드 성공!"
+                def scoreMsg = (pylintScore) ? "**💯 Pylint Score:** `${pylintScore}`\n✅ Build passed!" : "✅ 빌드 성공!"
                 sendDiscordMessage("✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}", scoreMsg, 65280)
             }
         }
 
         failure {
             script {
-                def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "❌ 빌드 실패"
+                def scoreMsg = (pylintScore) ? "**💯 Pylint Score:** `${pylintScore}`\n❌ Build failed!" : "❌ 빌드 실패"
                 sendDiscordMessage("❌ Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", scoreMsg, 16711680)
             }
         }
     }
 }
 
-def sendDiscordMessage(title, score, color) {
-    def description = "**💯 Pylint Score:** `${score}`\n✅ Build passed!"
-
+def sendDiscordMessage(title, description, color) {
     withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
-        writeFile file: 'send-discord.ps1', text: """
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+        writeFile file: 'send-discord.ps1', text: '''[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 param(
-    [string] \$WebhookUrl,
-    [string] \$Title,
-    [string] \$Description,
-    [int] \$Color,
-    [string] \$BuildUrl
+    [string] $WebhookUrl,
+    [string] $Title,
+    [string] $Description,
+    [int] $Color,
+    [string] $BuildUrl
 )
 
-\$payload = @{
+$payload = @{
     username = "JenkinsBot"
     embeds = @(
         @{
-            title = \$Title
-            description = \$Description
-            color = \$Color
-            url = \$BuildUrl
+            title = $Title
+            description = $Description
+            color = $Color
+            url = $BuildUrl
             footer = @{
                 text = "Jenkins CI/CD"
             }
@@ -156,22 +153,20 @@ param(
 } | ConvertTo-Json -Depth 10
 
 try {
-    Invoke-RestMethod -Uri \$WebhookUrl -Method Post -ContentType "application/json" -Body \$payload
+    Invoke-RestMethod -Uri $WebhookUrl -Method Post -ContentType "application/json" -Body $payload
     Write-Output "✅ Discord message sent successfully."
 } catch {
-    Write-Error "❌ Failed to send Discord message: \$_.Exception.Message"
+    Write-Error "❌ Failed to send Discord message: $($_.Exception.Message)"
     exit 1
 }
-        """, encoding: 'UTF-8'
+''', encoding: 'UTF-8'
 
-        bat """
-            powershell -ExecutionPolicy Bypass -File send-discord.ps1 ^
-                -WebhookUrl "${DISCORD_WEBHOOK}" ^
-                -Title "${title}" ^
-                -Description "${description}" ^
-                -Color ${color} ^
-                -BuildUrl "${env.BUILD_URL}"
-        """
+        bat '''powershell -ExecutionPolicy Bypass -File send-discord.ps1 ^
+            -WebhookUrl "%DISCORD_WEBHOOK%" ^
+            -Title "''' + title + '''" ^
+            -Description "''' + description + '''" ^
+            -Color ''' + color + ''' ^
+            -BuildUrl "''' + env.BUILD_URL + '''"
+        '''
     }
 }
-
