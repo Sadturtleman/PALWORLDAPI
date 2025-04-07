@@ -47,14 +47,14 @@ pipeline {
                         move pylint_report.html pylint_html\\report.html
                     '''
 
-                    // 점수 파싱
                     try {
                         def scoreText = readFile('pylint_score.txt')
-                        def matcher = (scoreText =~ /rated at ([\d\.]+)/)
+                        def matcher = (scoreText =~ /rated at ([\\d\\.]+)/)
                         if (matcher.find()) {
                             pylintScore = matcher.group(1)
                         } else {
                             echo "⚠️ 점수 매칭 실패. 기본값 유지."
+                            pylintScore = "0.0"
                         }
                     } catch (e) {
                         echo "❌ 점수 파일 읽기 실패: ${e.message}"
@@ -63,8 +63,6 @@ pipeline {
 
                     echo "🚀 Pylint Score: ${pylintScore}"
 
-
-                    // PR이면 점수 기준 통과 확인
                     if (env.CHANGE_ID) {
                         echo "Detected PR #${env.CHANGE_ID}, Checking pylint score"
                         if (pylintScore.toDouble() < MIN_SCORE.toDouble()) {
@@ -74,7 +72,6 @@ pipeline {
                         echo "일반 push 빌드이므로 pylint 점수 체크를 건너뜁니다."
                     }
 
-                    // index.html에 점수 포함 (리포트 보기 좋게)
                     def htmlBody = readFile('pylint_html/report.html')
                     writeFile file: 'pylint_html/index.html', text: """
                     <html>
@@ -118,6 +115,54 @@ pipeline {
                 reportFiles: 'index.html',
                 reportName: 'Pylint HTML Report'
             ])
+        }
+
+        success {
+            script {
+                def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "✅ 빌드 성공!"
+                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK')]) {
+                    bat """
+                        powershell -Command ^
+                        Invoke-RestMethod -Uri "${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
+                            username = "JenkinsBot";
+                            embeds = @(
+                                @{
+                                    title = "✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}";
+                                    description = "${scoreMsg}";
+                                    color = 65280;
+                                    url = "${env.BUILD_URL}";
+                                    footer = @{ text = "Jenkins CI/CD" };
+                                    timestamp = "$(Get-Date -Format o)"
+                                }
+                            )
+                        } | ConvertTo-Json -Depth 10)
+                    """
+                }
+            }
+        }
+
+        failure {
+            script {
+                def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "❌ 빌드 실패"
+                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK')]) {
+                    bat """
+                        powershell -Command ^
+                        Invoke-RestMethod -Uri "${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
+                            username = "JenkinsBot";
+                            embeds = @(
+                                @{
+                                    title = "❌ Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}";
+                                    description = "${scoreMsg}";
+                                    color = 16711680;
+                                    url = "${env.BUILD_URL}";
+                                    footer = @{ text = "Jenkins CI/CD" };
+                                    timestamp = "$(Get-Date -Format o)"
+                                }
+                            )
+                        } | ConvertTo-Json -Depth 10)
+                    """
+                }
+            }
         }
     }
 }
