@@ -124,9 +124,13 @@ pipeline {
     }
 }
 
-def sendDiscordMessage(title, description, color) {
+def sendDiscordMessage(title, score, color) {
+    def description = "**💯 Pylint Score:** `${score}`\n✅ Build passed!"
+
     withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
         writeFile file: 'send-discord.ps1', text: """
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 param(
     [string] \$WebhookUrl,
     [string] \$Title,
@@ -136,14 +140,16 @@ param(
 )
 
 \$payload = @{
-    username = "JenkinsBot";
+    username = "JenkinsBot"
     embeds = @(
         @{
-            title = \$Title;
-            description = \$Description;
-            color = \$Color;
-            url = \$BuildUrl;
-            footer = @{ text = "Jenkins CI/CD" };
+            title = \$Title
+            description = \$Description
+            color = \$Color
+            url = \$BuildUrl
+            footer = @{
+                text = "Jenkins CI/CD"
+            }
             timestamp = (Get-Date).ToString("o")
         }
     )
@@ -156,7 +162,7 @@ try {
     Write-Error "❌ Failed to send Discord message: \$_.Exception.Message"
     exit 1
 }
-        """
+        """, encoding: 'UTF-8'
 
         bat """
             powershell -ExecutionPolicy Bypass -File send-discord.ps1 ^
@@ -168,3 +174,4 @@ try {
         """
     }
 }
+
