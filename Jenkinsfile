@@ -29,19 +29,10 @@ pipeline {
                     bat '''
                         @echo off
                         call %VENV_DIR%\\Scripts\\activate.bat
-
                         echo === Running pylint and generating reports ===
-
-                        :: 1. JSON 리포트용
                         pylint PALWORLDAPI\\src\\main.py --output-format=json > pylint.json 2>&1
-
-                        :: 2. 텍스트 점수 추출용
                         pylint PALWORLDAPI\\src\\main.py > pylint_score.txt 2>&1
-
-                        :: 3. HTML 변환
                         pylint-json2html -f json -o pylint_report.html pylint.json
-
-                        :: 4. 결과 정리
                         if exist pylint_html rmdir /S /Q pylint_html
                         mkdir pylint_html
                         move pylint_report.html pylint_html\\report.html
@@ -120,49 +111,60 @@ pipeline {
         success {
             script {
                 def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "✅ 빌드 성공!"
-                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
-                    bat """
-                        powershell -Command ^
-                        Invoke-RestMethod -Uri "\${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
-                            username = "JenkinsBot";
-                            embeds = @(
-                                @{
-                                    title = "✅ Build Success: \${env.JOB_NAME} #\${env.BUILD_NUMBER}";
-                                    description = "${scoreMsg}";
-                                    color = 65280;
-                                    url = "\${env.BUILD_URL}";
-                                    footer = @{ text = "Jenkins CI/CD" };
-                                    timestamp = "\$(Get-Date -Format o)"
-                                }
-                            )
-                        } | ConvertTo-Json -Depth 10)
-                    """
-                }
+                sendDiscordMessage("✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}", scoreMsg, 65280)
             }
         }
 
         failure {
             script {
                 def scoreMsg = (pylintScore) ? "💯 *Pylint Score:* ${pylintScore}" : "❌ 빌드 실패"
-                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
-                    bat """
-                        powershell -Command ^
-                        Invoke-RestMethod -Uri "\${DISCORD_WEBHOOK}" -Method Post -ContentType "application/json" -Body (@{
-                            username = "JenkinsBot";
-                            embeds = @(
-                                @{
-                                    title = "❌ Build Failed: \${env.JOB_NAME} #\${env.BUILD_NUMBER}";
-                                    description = "${scoreMsg}";
-                                    color = 16711680;
-                                    url = "\${env.BUILD_URL}";
-                                    footer = @{ text = "Jenkins CI/CD" };
-                                    timestamp = "\$(Get-Date -Format o)"
-                                }
-                            )
-                        } | ConvertTo-Json -Depth 10)
-                    """
-                }
+                sendDiscordMessage("❌ Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", scoreMsg, 16711680)
             }
         }
+    }
+}
+
+def sendDiscordMessage(title, description, color) {
+    withCredentials([string(credentialsId: 'DISCORD_WEBHOOK', variable: 'DISCORD_WEBHOOK')]) {
+        writeFile file: 'send-discord.ps1', text: """
+param(
+    [string] \$WebhookUrl,
+    [string] \$Title,
+    [string] \$Description,
+    [int] \$Color,
+    [string] \$BuildUrl
+)
+
+\$payload = @{
+    username = "JenkinsBot";
+    embeds = @(
+        @{
+            title = \$Title;
+            description = \$Description;
+            color = \$Color;
+            url = \$BuildUrl;
+            footer = @{ text = "Jenkins CI/CD" };
+            timestamp = (Get-Date).ToString("o")
+        }
+    )
+} | ConvertTo-Json -Depth 10
+
+try {
+    Invoke-RestMethod -Uri \$WebhookUrl -Method Post -ContentType "application/json" -Body \$payload
+    Write-Output "✅ Discord message sent successfully."
+} catch {
+    Write-Error "❌ Failed to send Discord message: \$_.Exception.Message"
+    exit 1
+}
+        """
+
+        bat """
+            powershell -ExecutionPolicy Bypass -File send-discord.ps1 ^
+                -WebhookUrl "${DISCORD_WEBHOOK}" ^
+                -Title "${title}" ^
+                -Description "${description}" ^
+                -Color ${color} ^
+                -BuildUrl "${env.BUILD_URL}"
+        """
     }
 }
